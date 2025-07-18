@@ -1,11 +1,4 @@
-import {
-  ApiV3PoolInfoStandardItem,
-  AmmV4Keys,
-  AmmRpcData,
-  LogLevel,
-  setLoggerLevel,
-  USDCMint,
-} from '@raydium-io/raydium-sdk-v2'
+import { ApiV3PoolInfoStandardItem, AmmV4Keys, AmmRpcData } from '@raydium-io/raydium-sdk-v2'
 import { initSdk, txVersion } from '../config'
 import BN from 'bn.js'
 import { isValidAmm } from './utils'
@@ -14,14 +7,11 @@ import { NATIVE_MINT } from '@solana/spl-token'
 import { printSimulateInfo } from '../util'
 import { PublicKey } from '@solana/web3.js'
 
-// setLoggerLevel('Raydium_LiquidityV2', LogLevel.Debug) // uncomment to show debug log
-
-// swapBaseOut means fixed output token amount, calculate needed input token amount
-export const swapBaseOut = async () => {
+export const swap = async () => {
   const raydium = await initSdk()
-  const poolId = 'EHbPHWLdN58JAjW8mxiRqbvt4B1k3s2o2XPqD5qcnBGm' // SOL-SUCKCOIN pool
-  const amountOut = 500000 * 1000000 // means want to buy 200k SUCKCOIN
-  const inputMint = NATIVE_MINT.toBase58() // means use SOL to buy SUCKCOIN
+  const amountIn = 36000000 * 1000000 // 1 SUCKCOIN multiplier
+  const inputMint = new PublicKey('kRuVpT9jvnjfiBoVL8c9bp5ixTPBJRrq19ftdibpump').toBase58()
+  const poolId = 'EHbPHWLdN58JAjW8mxiRqbvt4B1k3s2o2XPqD5qcnBGm' // SOL-USDC pool
 
   let poolInfo: ApiV3PoolInfoStandardItem | undefined
   let poolKeys: AmmV4Keys | undefined
@@ -50,7 +40,7 @@ export const swapBaseOut = async () => {
   const baseIn = inputMint === poolInfo.mintA.address
   const [mintIn, mintOut] = baseIn ? [poolInfo.mintA, poolInfo.mintB] : [poolInfo.mintB, poolInfo.mintA]
 
-  const out = raydium.liquidity.computeAmountIn({
+  const out = raydium.liquidity.computeAmountOut({
     poolInfo: {
       ...poolInfo,
       baseReserve,
@@ -58,28 +48,30 @@ export const swapBaseOut = async () => {
       status,
       version: 4,
     },
-    amountOut: new BN(amountOut),
+    amountIn: new BN(amountIn),
     mintIn: mintIn.address,
     mintOut: mintOut.address,
     slippage: 0.01, // range: 1 ~ 0.0001, means 100% ~ 0.01%
   })
 
   console.log(
-    `computed swap for ${new Decimal(amountOut).div(10 ** mintOut.decimals).toFixed(mintOut.decimals)} ${
-      mintOut.symbol || mintOut.address
-    } expected input amount ${new Decimal(out.amountIn.toString())
+    `computed swap ${new Decimal(amountIn)
       .div(10 ** mintIn.decimals)
-      .toFixed(mintIn.decimals)} ${mintIn.symbol || mintIn.address}, maximum ${new Decimal(out.maxAmountIn.toString())
-      .div(10 ** mintIn.decimals)
-      .toFixed(mintIn.decimals)} ${mintIn.symbol || mintIn.address} needed`
+      .toDecimalPlaces(mintIn.decimals)
+      .toString()} ${mintIn.symbol || mintIn.address} to ${new Decimal(out.amountOut.toString())
+      .div(10 ** mintOut.decimals)
+      .toDecimalPlaces(mintOut.decimals)
+      .toString()} ${mintOut.symbol || mintOut.address}, minimum amount out ${new Decimal(out.minAmountOut.toString())
+      .div(10 ** mintOut.decimals)
+      .toDecimalPlaces(mintOut.decimals)} ${mintOut.symbol || mintOut.address}`
   )
 
   const { execute } = await raydium.liquidity.swap({
     poolInfo,
     poolKeys,
-    amountIn: out.maxAmountIn,
-    amountOut: new BN(amountOut), // out.amountOut means amount 'without' slippage
-    fixedSide: 'out',
+    amountIn: new BN(amountIn),
+    amountOut: out.minAmountOut, // out.amountOut means amount 'without' slippage
+    fixedSide: 'in',
     inputMint: mintIn.address,
     txVersion,
 
@@ -92,7 +84,7 @@ export const swapBaseOut = async () => {
 
     // optional: set up priority fee here
     computeBudgetConfig: {
-      units: 100000,
+      units: 150000,
       microLamports: 3000,
     },
 
@@ -112,4 +104,4 @@ export const swapBaseOut = async () => {
 }
 
 /** uncomment code below to execute */
-swapBaseOut()
+swap()

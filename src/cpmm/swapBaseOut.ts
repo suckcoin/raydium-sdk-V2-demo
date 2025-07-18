@@ -16,12 +16,13 @@ import { PublicKey } from '@solana/web3.js'
 export const swapBaseOut = async () => {
   const raydium = await initSdk()
 
-  // SOL - USDC pool
-  const poolId = '7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny'
+  // SOL - SUCKCOIN pool
+  const poolId = 'EHbPHWLdN58JAjW8mxiRqbvt4B1k3s2o2XPqD5qcnBGm'
 
   // means want to buy 1 USDC
-  const outputAmount = new BN(1000000)
-  const outputMint = USDCMint
+  const outputAmount = new BN(200000 * 1000000)
+  //const outputMint = USDCMint
+  const outputMint = new PublicKey('kRuVpT9jvnjfiBoVL8c9bp5ixTPBJRrq19ftdibpump');
 
   let poolInfo: ApiV3PoolInfoStandardItemCpmm
   let poolKeys: CpmmKeys | undefined
@@ -77,8 +78,8 @@ export const swapBaseOut = async () => {
     txVersion,
     // optional: set up priority fee here
     computeBudgetConfig: {
-      units: 600000,
-      microLamports: 465915,
+      units: 100000,
+      microLamports: 3000,
     },
 
     // optional: add transfer sol to tip account instruction. e.g sent tip to jito
@@ -98,4 +99,4 @@ export const swapBaseOut = async () => {
 }
 
 /** uncomment code below to execute */
-// swapBaseOut()
+swapBaseOut()

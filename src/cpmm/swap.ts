@@ -60,8 +60,8 @@ export const swap = async () => {
     baseIn,
     // optional: set up priority fee here
     // computeBudgetConfig: {
-    //   units: 600000,
-    //   microLamports: 4659150,
+    //   units: 250000,
+    //   microLamports: 100000,
     // },
 
     // optional: add transfer sol to tip account instruction. e.g sent tip to jito
@@ -81,4 +81,4 @@ export const swap = async () => {
 }
 
 /** uncomment code below to execute */
-// swap()
+swap()
